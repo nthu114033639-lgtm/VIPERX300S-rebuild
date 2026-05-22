@@ -70,6 +70,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install ROS 2 Humble Desktop Full and ROS tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-desktop-full \
+    ros-humble-realsense2-camera \
+    ros-humble-realsense2-camera-msgs \
+    ros-humble-realsense2-description \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-argcomplete \
+    whiptail \
+    iproute2 \
     python3-colcon-common-extensions \
     python3-rosdep \
     python3-vcstool \
@@ -77,7 +85,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     whiptail \
     iproute2 \
     ros-humble-rviz2 \
-    ros-humble-rqt* \
+    ros-humble-rqt \
+    ros-humble-rqt-common-plugins \
     ros-humble-tf2-tools \
     ros-humble-tf-transformations \
     ros-humble-joint-state-publisher \
@@ -93,30 +102,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-moveit-ros-perception \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 Intel RealSense SDK 2.0
-# 添加 Intel RealSense repository
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE \
-    && add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u \
-    && rm -rf /var/lib/apt/lists/*
-
-# 安裝 librealsense2 套件 (不含 DKMS kernel modules)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    librealsense2-utils \
-    librealsense2-dev \
-    librealsense2-udev-rules \
-    && rm -rf /var/lib/apt/lists/*
-
-# 安裝 pyrealsense2 Python 綁定 (透過 pip)
-RUN pip3 install --no-cache-dir pyrealsense2
-
-# 安裝 RealSense ROS2 driver
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-realsense2-camera \
-    ros-humble-realsense2-description \
-    && rm -rf /var/lib/apt/lists/*
 
 # 安裝 Dynamixel SDK 和 ros2_control 相關套件 (Interbotix 需要)
 RUN apt-get update && apt-get install -y --no-install-recommends \
