@@ -21,7 +21,7 @@
 
 **步驟：**
 1. 啟動並進入 Docker 容器：
-   ```bash
+  
    # (主機端) 開放圖形介面權限與 USB 權限
    xhost +local:docker
    sudo chmod 777 /dev/ttyUSB*
@@ -32,17 +32,17 @@
    
    # (主機端) 進入容器終端機
    docker exec -it viperx300s_robot bash
-   ```
+   
 2. 在 Docker 容器內重新編譯工作區：
-   ```bash
+   
    cd /workspace/ros2_ws
    colcon build --symlink-install
    source install/setup.bash
-   ```
+   
 3. 驗證修改結果：
-   ```bash
+   
    ros2 launch interbotix_xsarm_control xsarm_control.launch.py robot_model:=vx300s
-   ```
+   
 
 ## 4. 控制機器手臂的兩種方式（一樣在docker內）
 
@@ -69,21 +69,21 @@ ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=vx300s h
 需要開啟 **4 個獨立的終端機**，分別執行 `docker exec -it viperx300s_robot bash` 進入容器後，依序啟動：
 
 **終端機 1 (視覺模型控制器)：**
-```bash
+
 ros2 launch vlpoint controller.launch.py
-```
+
 **終端機 2 (視覺處理工作節點)：**
-```bash
+
 ros2 launch vlpoint worker.launch.py
-```
+
 **終端機 3 (啟動手臂底層與路徑規劃 MoveIt2)：**
-```bash
+
 ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=vx300s hardware_type:=actual
-```
+
 **終端機 4 (視覺伺服追蹤程式)：**
-```bash
+
 ros2 launch vlservo vlservoing.launch.py
-```
+
 
 ## 5. 連接與啟動 Intel RealSense 相機 (視覺處理前置準備)
 
@@ -93,17 +93,17 @@ ros2 launch vlservo vlservoing.launch.py
 1. **硬體連接：** 將 Intel RealSense 相機插入電腦主機的 **USB 3.0 (藍色) 以上的孔位** (USB 2.0 可能會造成頻寬不足無法正常傳輸影像)。
 2. **開放存取權限 (在主機端電腦)：**
    開啟主機的終端機，執行以下指令讓所有 USB 與影像設備皆有讀寫權限：
-   ```bash
+   
    sudo chmod -R 777 /dev/bus/usb/
    sudo chmod 777 /dev/video*
-   ```
+   
 3. **啟動 Docker 容器：**
    這時候再回到 `docker/` 資料夾中執行 `./run.sh`。由於你的 `docker-compose.yml` 已經預先寫好了 `/dev/video*` 與 `/dev/bus/usb` 的掛載關聯，此時容器內部就已經持有相機了。
 4. **驗證相機是否成功連線：**
    進入 Docker 容器後 (`docker exec -it viperx300s_robot bash`)，輸入以下指令來測試連線：
-   ```bash
+   
    rs-enumerate-devices
-   ```
+   
    如果有印出相機的名稱 (如 Intel RealSense D435i)、序號與各種支援的解析度清單，就代表相機已經完美連上，可以放心執行上面的「方式二：視覺伺服系統」了！
 
 進到 Docker 容器後，只要打 rs-enumerate-devices 這個官方工具指令，如果畫面噴出一大串相機的序號跟支援的解析度清單，就代表成功讀到，可以接著繼續玩視覺追蹤了！
