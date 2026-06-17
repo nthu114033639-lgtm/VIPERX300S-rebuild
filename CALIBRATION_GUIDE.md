@@ -44,9 +44,19 @@
    ros2 launch interbotix_xsarm_control xsarm_control.launch.py robot_model:=vx300s
    
 
-## 4. 控制機器手臂的兩種方式（一樣在docker內）
+## 4. 控制機器手臂的兩種方式（皆在 Docker 內執行）
 
-確認校正完畢且 RViz2 顯示與實體同步後，可透過以下兩種方式操作手臂：
+### 🛑 啟動前的重要硬體檢查與避錯：
+如果程式在啟動時閃退（終端機出現 `[FATAL] Failed to open port at '/dev/ttyUSB0'` 等字樣），代表 Docker 沒有抓到實體手臂馬達，請務必按照以下步驟「重置硬體連線」：
+1. **主機端**結束現有容器：`cd ~/jerry/viperx300s-VLA/docker && docker compose down`
+2. 確認手臂與電源皆已接好。
+3. 如果有開啟 Dynamixel Wizard 2.0，請務必關閉它或斷開連線 (Disconnect)。
+4. **主機端**賦予手臂通訊線最高權限：`sudo chmod 777 /dev/ttyUSB*`
+5. 重新啟動容器確保順利載入設備： `./run.sh`
+
+---
+
+確認環境載入完畢後，可透過以下兩種方式操作手臂：
 
 ### 方式一：使用 MoveIt2 手動圖形化控制 (基礎測試推薦)
 不需撰寫程式，直接透過 RViz2 的圖形介面拖曳手臂，用來確保運動學與避障功能正常。
@@ -69,21 +79,26 @@ ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=vx300s h
 需要開啟 **4 個獨立的終端機**，分別執行 `docker exec -it viperx300s_robot bash` 進入容器後，依序啟動：
 
 **終端機 1 (視覺模型控制器)：**
-
+```bash
 ros2 launch vlpoint controller.launch.py
+```
 
 **終端機 2 (視覺處理工作節點)：**
-
+```bash
 ros2 launch vlpoint worker.launch.py
+```
 
 **終端機 3 (啟動手臂底層與路徑規劃 MoveIt2)：**
-
+```bash
 ros2 launch interbotix_xsarm_moveit xsarm_moveit.launch.py robot_model:=vx300s hardware_type:=actual
+```
 
 **終端機 4 (視覺伺服追蹤程式)：**
-
+```bash
 ros2 launch vlservo vlservoing.launch.py
+```
 
+---
 
 ## 5. 連接與啟動 Intel RealSense 相機 (視覺處理前置準備)
 
@@ -93,24 +108,40 @@ ros2 launch vlservo vlservoing.launch.py
 1. **硬體連接：** 將 Intel RealSense 相機插入電腦主機的 **USB 3.0 (藍色) 以上的孔位** (USB 2.0 可能會造成頻寬不足無法正常傳輸影像)。
 2. **開放存取權限 (在主機端電腦)：**
    開啟主機的終端機，執行以下指令讓所有 USB 與影像設備皆有讀寫權限：
-   
+   ```bash
    sudo chmod -R 777 /dev/bus/usb/
    sudo chmod 777 /dev/video*
-   
+   ```
 3. **啟動 Docker 容器：**
-   這時候再回到 `docker/` 資料夾中執行 `./run.sh`。由於你的 `docker-compose.yml` 已經預先寫好了 `/dev/video*` 與 `/dev/bus/usb` 的掛載關聯，此時容器內部就已經持有相機了。
+   這時候再回到 `docker/` 資料夾中執行 `./run.sh`。由於 `docker-compose.yml` 已經預先寫好了 `/dev/video*` 與 `/dev/bus/usb` 的掛載關聯，此時容器內部就已經持有相機了。
 4. **驗證相機是否成功連線：**
    進入 Docker 容器後 (`docker exec -it viperx300s_robot bash`)，輸入以下指令來測試連線：
-   
+   ```bash
    rs-enumerate-devices
-   
-   如果有印出相機的名稱 (如 Intel RealSense D435i)、序號與各種支援的解析度清單，就代表相機已經完美連上，可以放心執行上面的「方式二：視覺伺服系統」了！
+   ```
+   如果有印出相機的名稱 (如 Intel RealSense D435i)、序號與各種支援的解析度清單，就代表相機已經完美連上！
 
-進到 Docker 容器後，只要打 rs-enumerate-devices 這個官方工具指令，如果畫面噴出一大串相機的序號跟支援的解析度清單，就代表成功讀到，可以接著繼續玩視覺追蹤了！
+---
 
-每次重開機/平常開發的日常使用流程】
+## 6. 【快速筆記】日常開發與重啟標準 SOP
 
-先插上手臂 USB 跟相機 USB，執行 sudo chmod 777 /dev/ttyUSB* /dev/video*。
-進入 docker 資料夾，執行 ./run.sh。
+每次重新開機、或者要開始寫程式時，請依序執行以下標準流程：
 
-如果要在這個黑盒子裡開多個終端機跑程式，就在主機端開新的終端機，用 docker exec -it viperx300s_robot bash 鑽進去下指令。
+1. **硬體準備：** 先插上手臂 USB 跟相機 USB，並確認電源開啟。
+2. **開放讀寫權限 (主機端)：**
+   ```bash
+   sudo chmod 777 /dev/ttyUSB* /dev/video*
+   ```
+3. **啟動開發環境 (主機端)：**
+   ```bash
+   cd ~/jerry/viperx300s-VLA/docker
+   ./run.sh
+   ```
+4. **進入工作終端機 (主機端開多個分頁時使用)：**
+   ```bash
+   docker exec -it viperx300s_robot bash
+   ```
+5. **徹底停止定刪除容器：**
+   ```bash
+   docker compose down
+   ```
