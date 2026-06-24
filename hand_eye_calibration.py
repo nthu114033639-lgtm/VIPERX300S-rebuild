@@ -56,6 +56,12 @@ class HandEyeCalibrator(Node):
             method=cv2.CALIB_HAND_EYE_TSAI
         )
 
+        # 檢查是否計算失敗 (如果平移矩陣全為 0，代表 OpenCV 計算失敗)
+        if R_cam2gripper is None or t_cam2gripper is None or np.all(t_cam2gripper == 0):
+            print("❌ 計算失敗！手臂的「旋轉角度」變化不足。")
+            print("💡 請重新收集數據，並確保夾爪有『傾斜、側擺』等不同視角，不要只做前後左右的平移！")
+            return
+
         quat = R.from_matrix(R_cam2gripper).as_quat() # x, y, z, w
         
         print("\n" + "="*60)

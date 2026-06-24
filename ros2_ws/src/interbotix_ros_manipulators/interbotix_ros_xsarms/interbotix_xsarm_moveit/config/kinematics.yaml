@@ -5,3 +5,8 @@
       kinematics_solver_search_resolution: 0.005
       kinematics_solver_timeout: 0.005
       position_only_ik: false
+    # [新增] 全域關節速度與加速度縮放因子
+    # 透過手動覆蓋 MoveIt2 的預設值，從根本上降低手臂的最大速度。
+    # 這會讓所有透過 MoveIt2 的規劃 (包含 Python API) 都自然變慢。
+    default_velocity_scaling_factor: 0.2
+    default_acceleration_scaling_factor: 0.2

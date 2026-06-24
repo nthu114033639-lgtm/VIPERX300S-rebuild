@@ -15,20 +15,19 @@ ENV DEBIAN_FRONTEND=noninteractive \
     ROS_DOMAIN_ID=15 \
     ROS_LOCALHOST_ONLY=0
 
-# Add ROS 2 apt repository and key
+# STEP 1: 設定基礎環境與 ROS 2 軟體來源 (Software Sources)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg2 \
     lsb-release \
     curl \
     ca-certificates \
-    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-      -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-    http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
-      > /etc/apt/sources.list.d/ros2.list \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* # 清理快取
 
-# 基本工具與開發套件 (包含 GUI、多媒體、串口支援)
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# STEP 2: 安裝所有需要的系統套件 (APT Packages)
+# 基本工具與開發套件
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git wget curl vim nano \
     locales \
@@ -67,7 +66,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install ROS 2 Humble Desktop Full and ROS tooling
+# ROS 2 Humble Desktop Full and ROS tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-desktop-full \
     ros-humble-realsense2-camera \
@@ -95,15 +94,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-xacro \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 MoveIt2
+# MoveIt2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-moveit \
+    ros-humble-moveit-msgs \
     ros-humble-moveit-servo \
     ros-humble-moveit-ros-perception \
     && rm -rf /var/lib/apt/lists/*
 
 
-# 安裝 Dynamixel SDK 和 ros2_control 相關套件 (Interbotix 需要)
+# Dynamixel SDK 和 ros2_control 相關套件 (Interbotix 需要)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-dynamixel-sdk \
     ros-humble-controller-manager \
@@ -113,7 +113,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-ros2-controllers \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 AprilTag 相關套件 (用於視覺定位)
+# AprilTag 相關套件 (用於視覺定位)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-apriltag \
     ros-humble-image-transport \
@@ -121,14 +121,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-image-geometry \
     libopencv-dev \
     libfreeimage-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Initialize rosdep database
-RUN rosdep init 2>/dev/null || true && rosdep update
-
+    && rm -rf /var/lib/apt/lists/* # 在所有 apt-get install 的最後清理一次
 # Use bash for subsequent RUN commands so we can 'source'
 SHELL ["/bin/bash", "-lc"]
 
+# STEP 3: 初始化 rosdep (ROS Dependency Tool)
+RUN rosdep init 2>/dev/null || true && rosdep update
+
+
+# STEP 4: 安裝所有 Python 套件
 # Python dependencies - 使用 constraints 鎖定版本避免衝突
 # 1. 先安裝基礎套件
 RUN pip3 install 'pip<25' 'setuptools<80,>=68' 'wheel>=0.40' 'packaging>=24.0'
@@ -173,7 +174,8 @@ RUN pip3 install -c /tmp/constraints.txt \
 # 9. 升級 transforms3d 到支援 NumPy 1.26+ 的版本 (修復 np.float 相容性問題)
 RUN pip3 install --upgrade transforms3d>=0.4.2
 
-# 設定 udev 規則 (為 Dynamixel U2D2 和 RealSense)
+# STEP 5: 設定硬體權限與 Shell 環境
+# udev 規則 (為 Dynamixel U2D2 和 RealSense)
 RUN echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0411", MODE="0666"' > /etc/udev/rules.d/99-realsense.rules && \
     echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="8087", MODE="0666"' >> /etc/udev/rules.d/99-realsense.rules && \
     echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", MODE="0666"' > /etc/udev/rules.d/99-interbotix.rules && \
