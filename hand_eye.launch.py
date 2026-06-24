@@ -13,8 +13,8 @@ def generate_launch_description():
             name='hand_eye_static_tf_publisher',
             arguments=[
                 # ros2 run tf2_ros static_transform_publisher x y z qx qy qz qw frame_id child_frame_id
-                '-0.06156', '0.01058', '0.05294',
-                '0.07425', '0.06706', '0.02969', '0.99454',
+                '-0.09585', '0.03591', '0.11942',
+                '0.09119', '0.04271', '-0.07672', '0.99195',
                 'vx300s/ee_gripper_link',
                 'camera_link'
             ],
